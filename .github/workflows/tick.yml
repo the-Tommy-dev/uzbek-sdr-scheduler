@@ -3,7 +3,8 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '2-57/5 * * * *'
-permissions: {}
+permissions:
+  contents: read
 concurrency:
   group: tradehouse-worker
   cancel-in-progress: false
@@ -11,26 +12,10 @@ jobs:
   tick:
     if: vars.SDR_HOSTED_ENABLED == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 345
     steps:
-      - name: Collect public news
+      - uses: actions/checkout@v4
+      - name: Five-minute collection and workflow ticks
         env:
           WORKER_SECRET: ${{ secrets.SDR_WORKER_SECRET }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -n "$WORKER_SECRET"
-          status=$(curl --max-time 280 --silent --show-error --output /tmp/collector-result --write-out '%{http_code}' --request POST --header "Authorization: Bearer $WORKER_SECRET" 'https://uzbeknewssdr.vercel.app/api/crawl')
-          echo "Collection HTTP status: $status"
-          test "$status" = 200
-      - name: Process independent workflow queue
-        if: always()
-        env:
-          WORKER_SECRET: ${{ secrets.SDR_WORKER_SECRET }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -n "$WORKER_SECRET"
-          status=$(curl --max-time 280 --silent --show-error --output /tmp/worker-result --write-out '%{http_code}' --request POST --header "Authorization: Bearer $WORKER_SECRET" 'https://uzbeknewssdr.vercel.app/api/worker')
-          echo "Workflow HTTP status: $status"
-          test "$status" = 200
+        run: node tick.mjs

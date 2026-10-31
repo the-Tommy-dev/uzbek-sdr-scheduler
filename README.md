@@ -1,9 +1,7 @@
-# Tradehouse scheduled checks
+# Tradehouse cloud scheduler
 
-This repository contains only a small scheduler for a separately hosted application.
+Only the scheduler workflow and its tiny HTTP polling script are public. Application source, database, company data and credentials remain private.
 
-It invokes two fixed HTTPS endpoints every five minutes on a best-effort basis. Source code, business data and API response bodies are not published here. The dedicated worker credential is stored as an encrypted Actions secret. Logs show HTTP statuses only. The workflow performs no checkout and has no repository write permissions.
+A job ticks collection and the workflow independently every five minutes for 66 ticks (about 5h25m). Repository concurrency permits one active job and one pending replacement. Scheduled launches are best effort: GitHub can delay/drop cron events. A pending replacement starts after the active session finishes; there can still be a restart gap or platform outage. Manual workflow dispatch can start recovery.
 
-Set `SDR_HOSTED_ENABLED=false` in repository Actions variables to pause scheduled checks. Keep `SDR_WORKER_SECRET` only in Actions secrets. Never put it into source or a URL.
-
-GitHub may delay cron jobs. Actual application execution/queue status is tracked inside the private application's operator dashboard. Free standard-runner usage for public repositories is documented in [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions).
+The encrypted worker secret is supplied only as an Actions secret. Logs contain endpoint status and a private worker receipt identifier, never response bodies or credentials. No third-party actions beyond checkout are used. The application enforces durable request caches and daily spend limits. Polling failure does not immediately repeat an ambiguous request.
